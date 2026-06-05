@@ -218,6 +218,75 @@ Ubuntu হচ্ছে লিনাক্স ভিত্তিক অপার�
   curl https://example.com
   ```
 
+### 5.9 `shutdown` / power management
+- কাজ: সিস্টেম বন্ধ, রিবুট বা শিডিউল করা। প্রশাসনিক (sudo) অধিকার লাগে।
+- সাধারণ ব্যবহার:
+  ```bash
+  # এখনই শাটডাউন (power off)
+  sudo shutdown -h now
+
+  # এখনই রিবুট
+  sudo shutdown -r now
+
+  # নির্দিষ্ট সময় পরে শাটডাউন (উদাহরণ: 10 মিনিট পরে)
+  sudo shutdown -P +10
+
+  # দ্রুত পাওয়ার অফ / রিবুট
+  sudo poweroff
+  sudo reboot
+
+  # systemd ব্যবহার করে
+  sudo systemctl poweroff
+  sudo systemctl reboot
+  ```
+
+সতর্কতা: শাটডাউন চালানোর আগে সব কাজ সংরক্ষণ করে নিন, কারণ চালু থাকা প্রক্রিয়া বন্ধ হয়ে যাবে।
+
+### 5.10 Permanent removal / secure delete
+- কাজ: ফাইল স্থায়ীভাবে মুছে ফেলা এবং সম্ভাব্যভাবে ডিস্কে থাকা ডেটা ওভাররাইট করা।
+- সতর্কতা: SSD বা journaled ফাইল সিস্টেমে ভেরিফায়েবল ডিলিট করা কঠিন — সম্পূর্ণ ডিস্ক এনক্রিপশন ব্যবহার করাই সর্বোত্তম।
+- সাধারণ টুল ও ব্যবহার:
+  ```bash
+  # GNU rm-এর কিছু সিস্টেমে -P (overwrite 3 times) অপশন থাকে
+  rm -P secret.txt
+
+  # shred: ফাইলকে ওভাররাইট করে, পরে মুছে ফেলে
+  shred -u -v secret.txt
+
+  # srm (secure-delete package) — ইন্সটল করে ব্যবহার করতে হয়
+  srm -v secret.txt
+
+  # যদি শুধু ওভাররাইট করে তারপর মুছতে চান (সাবধান):
+  dd if=/dev/zero of=secret.txt bs=1M count=10 && rm secret.txt
+  ```
+
+- টিপস:
+  - SSD-তে ডেটা পুরোপুরি অপসারণ নিশ্চিত নয় — ব্যবহার করুন full-disk encryption বা physically destroy if necessary.
+  - প্যাকেজ ইন্সটল: `sudo apt install secure-delete` (srm) বা `sudo apt install coreutils` (shred/rm present)।
+
+### 5.11 File location & memory / register position checks
+- কাজ: ফাইলের inode, ব্লক/extent অবস্থান, এবং কোর মেমোরিতে (cache) আছে কিনা চেক করা।
+- সাধারণ কমান্ড:
+  ```bash
+  # ফাইলের inode ও লিঙ্ক দেখার জন্য
+  ls -li file.txt
+  stat file.txt
+
+  # ফাইল কোন ব্লকগুলোতে আছে (extent) দেখার জন্য
+  filefrag -v file.txt
+
+  # যদি অনুমতি থাকে, filesystem-level mapping দেখতে পারেন
+  sudo hdparm --fibmap file.txt
+
+  # কোন প্রসেস ফাইলটি খুলে রেখেছে দেখুন
+  lsof -- file.txt
+
+  # ফাইল বা পেজ cache(র্যাম) এ আছে কিনা পরীক্ষার জন্য (vmtouch ইনস্টল করে)
+  vmtouch -v file.txt
+  ```
+
+- নোট: `filefrag` ও `--fibmap` ব্লক/extent তথ্য দেয়; কিন্তু SSD এবং LVM এর কারণে ফিজিক্যাল ব্লক নিশ্চিত না হতে পারে। `vmtouch` সব সিস্টেমে ইনস্টল নেই — `sudo apt install vmtouch` করে ব্যবহার করা যায়।
+
 ## 6. উন্নত কমান্ড
 
 ### 6.1 `tar`
